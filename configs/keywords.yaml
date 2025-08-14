@@ -2,7 +2,6 @@
 # タイトルや要約に含まれていれば通知するキーワード（正規表現でOR条件）
 
 keywords:
-  # 機械学習・AI関連
   - "vector graphics|vector|graphics"
   - "code|code generation"
   - "RAG|retrieval-augmented generation|retrieval-augmented generation|retrieval augmented generation"
