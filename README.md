@@ -6,7 +6,7 @@
 
 arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー）から新着論文を取得し，設定されたキーワードに基づいてフィルタリングしてSlackに通知するボットです．
 
-<img src="https://raw.githubusercontent.com/Taiga10969/arXiv-feed-SlackBot/refs/heads/main/data/image/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88%202025-08-14%2016.31.10.png" alt="arXiv-feed-SlackBot" width="350">
+<img src="https://raw.githubusercontent.com/Taiga10969/arXiv-feed-SlackBot/refs/heads/main/data/image/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88%202025-08-14%2016.31.10.png" alt="arXiv-feed-SlackBot" width="500">
 
 </div>
 
