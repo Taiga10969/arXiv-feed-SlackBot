@@ -7,7 +7,7 @@ arXiv 新着論文通知ボット
 特徴:
 - 指定されたarXivカテゴリから新着論文を自動取得
 - 重み付きキーワードフィルタリングによる関連論文の抽出
-- スコアリングシステム（タイトル×重み + 要約×重み）
+- スコアリングシステム（各キーワード1回のみ重みを適用）
 - 重複通知の防止（既読管理）
 - Slackへの自動通知（キーワード（score）形式）
 - 翻訳機能（Google Cloud Translation API）
@@ -215,31 +215,23 @@ def compile_kw_patterns(kw_list: List[Any]) -> List[Tuple[re.Pattern, int]]:
     return patterns
 
 def compute_match_score(title: str, summary: str, patterns: List[Tuple[re.Pattern, int]]) -> Tuple[int, List[str], List[Tuple[str, int]]]:
-    """一致スコアとマッチしたキーワードを計算（タイトル×重み + 要約×重み）"""
+    """一致スコアとマッチしたキーワードを計算（各キーワード1回のみ重みを適用）"""
     if not patterns:
         return 0, [], []
     
-    score_title = 0
-    score_summary = 0
+    total_score = 0
     matched_keywords = []
     keyword_scores = []  # キーワードとそのスコアのタプル
 
     for pattern, weight in patterns:
         t_hits = pattern.findall(title)
         s_hits = pattern.findall(summary)
-        keyword_score = 0
-
-        if t_hits:
-            keyword_score += len(t_hits) * weight
-            score_title += len(t_hits) * weight
-            matched_keywords.append(pattern.pattern)
-        if s_hits:
-            keyword_score += len(s_hits) * weight
-            score_summary += len(s_hits) * weight
-            matched_keywords.append(pattern.pattern)
         
-        if keyword_score > 0:
-            keyword_scores.append((pattern.pattern, keyword_score))
+        # タイトルまたは要約のどちらかでマッチすれば、重みを1回だけ適用
+        if t_hits or s_hits:
+            total_score += weight  # 重みを1回だけ追加
+            matched_keywords.append(pattern.pattern)
+            keyword_scores.append((pattern.pattern, weight))
 
     # 重複除去して返す（順序保持）
     seen_set = set()
@@ -249,15 +241,15 @@ def compute_match_score(title: str, summary: str, patterns: List[Tuple[re.Patter
             matched_uniq.append(k)
             seen_set.add(k)
 
-    return score_title + score_summary, matched_uniq, keyword_scores
+    return total_score, matched_uniq, keyword_scores
 
 def select_by_relevance(
     items: List[Dict[str, Any]],
     kw_patterns: List[Tuple[re.Pattern, int]],
     max_posts: int,
-) -> List[Tuple[Dict[str, Any], List[str]]]:
+) -> List[Tuple[Dict[str, Any], List[str], List[Tuple[str, int]], int]]:
     """関連性に基づいて論文を選択"""
-    candidates: List[Tuple[int, dt.datetime, Dict[str, Any], List[str]]] = []
+    candidates: List[Tuple[int, dt.datetime, Dict[str, Any], List[str], List[Tuple[str, int]]]] = []
     
     # 検索時間の設定を取得
     hours_back = CONFIG.get("search", {}).get("hours_back", 24)
@@ -295,7 +287,7 @@ def select_by_relevance(
     candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
     
     # max_posts 件に制限して返す
-    return [(item, matched_kw, keyword_scores) for _, _, item, matched_kw, keyword_scores in candidates[:max_posts]]
+    return [(item, matched_kw, keyword_scores, score) for score, _, item, matched_kw, keyword_scores in candidates[:max_posts]]
 
 
 # ==============================
@@ -374,7 +366,7 @@ def clean_text_for_slack(text: str) -> str:
     cleaned = cleaned.replace("\x7F", "").replace("\x80", "").replace("\x81", "")
     return cleaned
 
-def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str], List[Tuple[str, int]]]], total_count: int = None, displayed_count: int = None) -> List[Dict[str, Any]]:
+def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str], List[Tuple[str, int]], int]], total_count: int = None, displayed_count: int = None) -> List[Dict[str, Any]]:
     """Slackブロックを作成"""
     try:
         blocks: List[Dict[str, Any]] = []
@@ -412,7 +404,7 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str], List[Tuple[
         show_translated = translate_config.get("show_translated", False)
         hide_original_when_translated = translate_config.get("hide_original_when_translated", False)
 
-        for item, matched_keywords, keyword_scores in entries:
+        for item, matched_keywords, keyword_scores, total_score in entries:
             title = item["title"]
             url = item["link"]
             summary = item["summary"]
@@ -444,12 +436,10 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str], List[Tuple[
                                 break
                         
                         clean_kw = kw.replace('\\', '')
-                        if score > 0:
-                            keyword_score_pairs.append(f"{clean_kw}({score})")
-                        else:
-                            keyword_score_pairs.append(clean_kw)
+                        keyword_score_pairs.append(f"{clean_kw}({score})")
                     
-                    keywords_text = "*キーワード（score）:* " + ", ".join(keyword_score_pairs)
+                    # 合計点数を表示
+                    keywords_text = f"*キーワード（score）:* {', '.join(keyword_score_pairs)} *合計点数: {total_score}*"
                     
                     if len(keywords_text) > 3000:
                         keywords_text = keywords_text[:2800] + "..."
@@ -643,7 +633,7 @@ def main() -> None:
         post_to_slack_webhook(blocks)
 
         # 既読IDを保存（表示した分のみ既読化）
-        for item, _, _ in selected:
+        for item, _, _, _ in selected:
             SEEN.add(item["id"])
         SEEN_PATH.write_text(json.dumps(sorted(SEEN)), encoding="utf-8")
         
