@@ -1,0 +1,29 @@
+timezone: "Asia/Tokyo"          # タイムゾーン。通知時刻や日付表示に使う（例: 日本時間なら "Asia/Tokyo"）
+
+# カテゴリとキーワードの設定ファイルパス
+# これらのファイルを編集して、興味のある分野やキーワードを設定してください
+categories_file: "configs/categories.yaml"    # arXivカテゴリ設定ファイル
+keywords_file: "configs/keywords.yaml"        # キーワード設定ファイル
+
+# 1回の通知で送る最大件数（ヒットが多すぎる場合の上限）
+max_posts: 15   
+
+# 表示設定
+display:
+  show_keywords: true      # マッチしたキーワードを表示
+  show_abstract: false     # 論文の概要を表示
+  show_translate: false    # 翻訳された概要を表示（翻訳が有効な場合のみ）
+
+# Slackに表示されるBot名（送信者名）
+slack:
+  username: "arXiv-feed-SlackBot"
+  icon_emoji: ""
+
+# 既読管理ファイル名（data/seen_taiga.json として保存される）
+# 通知済みのarXiv IDを記録し、重複通知を防ぐために使用
+state_file: "seen.json"   
+                                
+# 翻訳（任意）
+translate:
+  enabled: false                # trueにすると要約文を翻訳して通知（Google Cloud Translation API利用）
+  target_language: "ja"         # 翻訳先言語（例: "ja"=日本語, "en"=英語）

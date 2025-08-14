@@ -1,0 +1,19 @@
+# arXiv カテゴリ設定
+# 取得対象の arXiv カテゴリ（複数可）
+# 例: cs.CV（コンピュータビジョン）, cs.LG（機械学習）, cs.CL（自然言語処理）など
+
+categories:
+  - cs.CV    # コンピュータビジョン
+  - cs.AI    # 人工知能
+  - cs.LG    # 機械学習
+  - cs.CL    # 自然言語処理
+
+# カテゴリの説明（参考用）
+# cs.CV: Computer Vision and Pattern Recognition
+# cs.AI: Artificial Intelligence
+# cs.LG: Machine Learning
+# cs.CL: Computation and Language
+# cs.NE: Neural and Evolutionary Computing
+# cs.IR: Information Retrieval
+# cs.SE: Software Engineering
+# cs.DC: Distributed, Parallel, and Cluster Computing
