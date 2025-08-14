@@ -1,20 +1,35 @@
 # キーワード設定
-# タイトルや要約に含まれていれば通知するキーワード（正規表現でOR条件）
+# タイトルや要約に含まれていれば通知するキーワード（重み付き）
+# 各キーワードには重み（weight）を設定できます
+# 重みが高いほど、そのキーワードにマッチした際のスコアが高くなります
 
 keywords:
-  - "vector graphics|vector|graphics"
-  - "code|code generation"
-  - "RAG|retrieval-augmented generation|retrieval-augmented generation|retrieval augmented generation"
-  - "LLM|large language model|large language models"
-  - "TikZ"
-  - "LaTeX|latex"
-  - "SVG|Scalable Vector Graphics|scalable vector graphics"
-  - "agent|agentic|agentic model|agentic models"
+  - keyword: "vector graphics|vector|graphics"
+    weight: 3
+  - keyword: "code|code generation"
+    weight: 3
+  - keyword: "RAG|retrieval-augmented generation|retrieval-augmented generation|retrieval augmented generation"
+    weight: 2
+  - keyword: "LLM|large language model|large language models"
+    weight: 1
+  - keyword: "TikZ"
+    weight: 3
+  - keyword: "LaTeX|latex"
+    weight: 2
+  - keyword: "SVG|Scalable Vector Graphics|scalable vector graphics"
+    weight: 2
+  - keyword: "agent|agentic|agentic model|agentic models"
+    weight: 2
 
-  
+# 重みの設定例
+# - weight: 1  # 基本スコア（タイトル×2 + 要約×1）
+# - weight: 2  # 2倍のスコア（タイトル×4 + 要約×2）
+# - weight: 3  # 3倍のスコア（タイトル×6 + 要約×3）
+# - weight: 4  # 4倍のスコア（タイトル×8 + 要約×4）
+
 # 正規表現の使用例
 # 複数のキーワードをOR条件で指定したい場合:
-# - "vision-language|VLM|caption"  # vision-language または VLM または caption
-# - "detection|segmentation"       # detection または segmentation
+# - keyword: "vision-language|VLM|caption"  # vision-language または VLM または caption
+# - keyword: "detection|segmentation"       # detection または segmentation
 
 # 大文字小文字は区別されません（自動的にIGNORECASEが適用されます）

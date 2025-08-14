@@ -6,10 +6,10 @@ arXiv 新着論文通知ボット
 
 特徴:
 - 指定されたarXivカテゴリから新着論文を自動取得
-- キーワードフィルタリングによる関連論文の抽出
-- スコアリングシステム（タイトル×2 + 要約×1）
+- 重み付きキーワードフィルタリングによる関連論文の抽出
+- スコアリングシステム（タイトル×重み + 要約×重み）
 - 重複通知の防止（既読管理）
-- Slackへの自動通知
+- Slackへの自動通知（キーワード（score）形式）
 - 翻訳機能（Google Cloud Translation API）
 
 使用方法:
@@ -174,49 +174,72 @@ def _relax(term: str) -> str:
     return r"(?:%s)" % r"[-\s]*".join(escaped)
 # ----------------------------------------------------------------------
 
-def compile_kw_patterns(kw_list: List[str]) -> List[re.Pattern]:
+def compile_kw_patterns(kw_list: List[Any]) -> List[Tuple[re.Pattern, int]]:
     """
-    キーワードリストから正規表現パターンを作成。
+    キーワードリストから正規表現パターンと重みのタプルを作成。
+    - 新しい形式: [{"keyword": "...", "weight": N}, ...]
+    - 旧形式: ["...", ...] (weight=1として扱う)
     - '|' を含む文字列は **ユーザー指定の正規表現**としてそのまま採用（部分一致OK）
-    - それ以外は _relax により揺れを許容した“ゆるめ正規表現”に変換（部分一致OK）
+    - それ以外は _relax により揺れを許容した"ゆるめ正規表現"に変換（部分一致OK）
     """
     if not kw_list:
         return []
     
-    patterns: List[re.Pattern] = []
-    for kw in kw_list:
-        if "|" in kw:
+    patterns: List[Tuple[re.Pattern, int]] = []
+    for kw_item in kw_list:
+        # 新しい形式（辞書）か旧形式（文字列）かを判定
+        if isinstance(kw_item, dict):
+            keyword = kw_item.get("keyword", "")
+            weight = kw_item.get("weight", 1)
+        else:
+            keyword = kw_item
+            weight = 1
+        
+        if not keyword:
+            continue
+            
+        if "|" in keyword:
             # OR を含むものはユーザー定義の正規表現として採用
             try:
-                patterns.append(re.compile(kw, re.IGNORECASE))
+                pattern = re.compile(keyword, re.IGNORECASE)
+                patterns.append((pattern, weight))
             except re.error as e:
-                print(f"[WARN] Invalid regex in keyword (kept as literal): {kw} ({e})")
-                patterns.append(re.compile(re.escape(kw), re.IGNORECASE))
+                print(f"[WARN] Invalid regex in keyword (kept as literal): {keyword} ({e})")
+                pattern = re.compile(re.escape(keyword), re.IGNORECASE)
+                patterns.append((pattern, weight))
         else:
-            relaxed = _relax(kw)
+            relaxed = _relax(keyword)
             if relaxed:
-                patterns.append(re.compile(relaxed, re.IGNORECASE))
+                pattern = re.compile(relaxed, re.IGNORECASE)
+                patterns.append((pattern, weight))
     return patterns
 
-def compute_match_score(title: str, summary: str, patterns: List[re.Pattern]) -> Tuple[int, List[str]]:
-    """一致スコアとマッチしたキーワードを計算（タイトル×2 + 要約×1）"""
+def compute_match_score(title: str, summary: str, patterns: List[Tuple[re.Pattern, int]]) -> Tuple[int, List[str], List[Tuple[str, int]]]:
+    """一致スコアとマッチしたキーワードを計算（タイトル×重み + 要約×重み）"""
     if not patterns:
-        return 0, []
+        return 0, [], []
     
     score_title = 0
     score_summary = 0
     matched_keywords = []
+    keyword_scores = []  # キーワードとそのスコアのタプル
 
-    for pattern in patterns:
+    for pattern, weight in patterns:
         t_hits = pattern.findall(title)
         s_hits = pattern.findall(summary)
+        keyword_score = 0
 
         if t_hits:
-            score_title += len(t_hits)
+            keyword_score += len(t_hits) * weight
+            score_title += len(t_hits) * weight
             matched_keywords.append(pattern.pattern)
         if s_hits:
-            score_summary += len(s_hits)
+            keyword_score += len(s_hits) * weight
+            score_summary += len(s_hits) * weight
             matched_keywords.append(pattern.pattern)
+        
+        if keyword_score > 0:
+            keyword_scores.append((pattern.pattern, keyword_score))
 
     # 重複除去して返す（順序保持）
     seen_set = set()
@@ -226,11 +249,11 @@ def compute_match_score(title: str, summary: str, patterns: List[re.Pattern]) ->
             matched_uniq.append(k)
             seen_set.add(k)
 
-    return score_title * 2 + score_summary, matched_uniq
+    return score_title + score_summary, matched_uniq, keyword_scores
 
 def select_by_relevance(
     items: List[Dict[str, Any]],
-    kw_patterns: List[re.Pattern],
+    kw_patterns: List[Tuple[re.Pattern, int]],
     max_posts: int,
 ) -> List[Tuple[Dict[str, Any], List[str]]]:
     """関連性に基づいて論文を選択"""
@@ -250,7 +273,7 @@ def select_by_relevance(
             continue
 
         if kw_patterns:
-            score, matched_kw = compute_match_score(item["title"], item["summary"], kw_patterns)
+            score, matched_kw, keyword_scores = compute_match_score(item["title"], item["summary"], kw_patterns)
             print(f"[DEBUG] Item {item['id']} score: {score}, keywords: {matched_kw}")
             if score <= 0:
                 print(f"[DEBUG] Item {item['id']} score <= 0, skipping")
@@ -258,10 +281,11 @@ def select_by_relevance(
         else:
             score = 0
             matched_kw = []
+            keyword_scores = []
             print(f"[DEBUG] Item {item['id']} no keywords, score: 0")
 
         pub_dt = parse_iso8601(item["published"])
-        candidates.append((score, pub_dt, item, matched_kw))
+        candidates.append((score, pub_dt, item, matched_kw, keyword_scores))
         print(f"[DEBUG] Item {item['id']} added to candidates")
 
     if not candidates:
@@ -271,7 +295,7 @@ def select_by_relevance(
     candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
     
     # max_posts 件に制限して返す
-    return [(item, matched_kw) for _, _, item, matched_kw in candidates[:max_posts]]
+    return [(item, matched_kw, keyword_scores) for _, _, item, matched_kw, keyword_scores in candidates[:max_posts]]
 
 
 # ==============================
@@ -350,7 +374,7 @@ def clean_text_for_slack(text: str) -> str:
     cleaned = cleaned.replace("\x7F", "").replace("\x80", "").replace("\x81", "")
     return cleaned
 
-def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_count: int = None, displayed_count: int = None) -> List[Dict[str, Any]]:
+def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str], List[Tuple[str, int]]]], total_count: int = None, displayed_count: int = None) -> List[Dict[str, Any]]:
     """Slackブロックを作成"""
     try:
         blocks: List[Dict[str, Any]] = []
@@ -388,7 +412,7 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_cou
         show_translated = translate_config.get("show_translated", False)
         hide_original_when_translated = translate_config.get("hide_original_when_translated", False)
 
-        for item, matched_keywords in entries:
+        for item, matched_keywords, keyword_scores in entries:
             title = item["title"]
             url = item["link"]
             summary = item["summary"]
@@ -409,8 +433,23 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_cou
             # キーワード表示
             if show_keywords and matched_keywords:
                 try:
-                    clean_keywords = [kw.replace('\\', '') for kw in matched_keywords]
-                    keywords_text = "*キーワード:* " + ", ".join(clean_keywords)
+                    # キーワードとスコアの組み合わせを作成
+                    keyword_score_pairs = []
+                    for kw in matched_keywords:
+                        # 対応するスコアを探す
+                        score = 0
+                        for pattern, kw_score in keyword_scores:
+                            if pattern == kw:
+                                score = kw_score
+                                break
+                        
+                        clean_kw = kw.replace('\\', '')
+                        if score > 0:
+                            keyword_score_pairs.append(f"{clean_kw}({score})")
+                        else:
+                            keyword_score_pairs.append(clean_kw)
+                    
+                    keywords_text = "*キーワード（score）:* " + ", ".join(keyword_score_pairs)
                     
                     if len(keywords_text) > 3000:
                         keywords_text = keywords_text[:2800] + "..."
@@ -534,7 +573,17 @@ def make_no_papers_message() -> List[Dict[str, Any]]:
     keywords = CONFIG.get("keywords", [])
     hours_back = CONFIG.get("search", {}).get("hours_back", 24)
     
-    config_info = f"*設定情報:*\n• カテゴリ: {', '.join(cats)}\n• キーワード: {', '.join(keywords) if keywords else 'なし'}\n• 検索時間: 過去{hours_back}時間"
+    # キーワード情報を整形
+    keyword_info = []
+    for kw_item in keywords:
+        if isinstance(kw_item, dict):
+            keyword = kw_item.get("keyword", "")
+            weight = kw_item.get("weight", 1)
+            keyword_info.append(f"{keyword}(重み:{weight})")
+        else:
+            keyword_info.append(str(kw_item))
+    
+    config_info = f"*設定情報:*\n• カテゴリ: {', '.join(cats)}\n• キーワード: {', '.join(keyword_info) if keyword_info else 'なし'}\n• 検索時間: 過去{hours_back}時間"
     
     config_block = {
         "type": "section",
@@ -594,7 +643,7 @@ def main() -> None:
         post_to_slack_webhook(blocks)
 
         # 既読IDを保存（表示した分のみ既読化）
-        for item, _ in selected:
+        for item, _, _ in selected:
             SEEN.add(item["id"])
         SEEN_PATH.write_text(json.dumps(sorted(SEEN)), encoding="utf-8")
         
