@@ -306,7 +306,7 @@ def clean_text_for_slack(text: str) -> str:
     cleaned = cleaned.replace("\x7F", "").replace("\x80", "").replace("\x81", "")
     return cleaned
 
-def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_count: int = None) -> List[Dict[str, Any]]:
+def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_count: int = None, displayed_count: int = None) -> List[Dict[str, Any]]:
     """Slackブロックを作成"""
     try:
         blocks: List[Dict[str, Any]] = []
@@ -318,8 +318,8 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_cou
             date_str = "今日"
         
         # ヘッダーテキストの作成（総件数情報を含む）
-        if total_count and total_count > len(entries):
-            header_text = f"arXiv で公開された新着論文 ({date_str}) - 全{total_count}件中{len(entries)}件表示"
+        if total_count and displayed_count and total_count > displayed_count:
+            header_text = f"arXiv で公開された新着論文 ({date_str}) - 全{total_count}件中{displayed_count}件表示"
         else:
             header_text = f"arXiv で公開された新着論文 ({date_str})"
         
@@ -537,9 +537,13 @@ def main() -> None:
         # 論文が見つかった場合
         # 総件数を計算（max_postsを超える場合の表示用）
         hours_back = CONFIG.get("search", {}).get("hours_back", 24)
-        total_matched = len([item for item in items if item["id"] not in SEEN and within_search_hours(item["published"], hours_back)])
+        all_matched = [item for item in items if item["id"] not in SEEN and within_search_hours(item["published"], hours_back)]
+        total_matched = len(all_matched)
         
-        blocks = make_slack_blocks(selected, total_count=total_matched)
+        # 実際に表示される件数（max_postsで制限された件数）
+        displayed_count = len(selected)
+        
+        blocks = make_slack_blocks(selected, total_count=total_matched, displayed_count=displayed_count)
         post_to_slack_webhook(blocks)
 
         # 既読IDを保存

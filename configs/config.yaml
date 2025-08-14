@@ -28,7 +28,7 @@ state_file: "seen.json"
                                 
 # 翻訳設定
 translate:
-  enabled: true                # 翻訳機能を有効にするかどうか
+  enabled: false                # 翻訳機能を有効にするかどうか
   target_language: "ja"         # 翻訳先言語（例: "ja"=日本語, "en"=英語）
   show_translated: true        # 翻訳された概要を表示するかどうか（enabled=trueの場合のみ有効）
   hide_original_when_translated: true  # 翻訳表示時に元の英語概要を非表示にするかどうか
