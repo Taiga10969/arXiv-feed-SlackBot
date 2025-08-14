@@ -2,9 +2,9 @@
 
 <img src="https://taiga10969.github.io/images/arXiv-feed-SlackBot.png" alt="arXiv-feed-SlackBot" width="200" height="200">
 
-# 📚 arXiv-feed-SlackBot
+# arXiv-feed-SlackBot
 
-arXiv（学術論文のプレプリントサーバー）から新着論文を取得し、設定されたキーワードに基づいてフィルタリングしてSlackに通知するPythonボットです。
+arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー）から新着論文を取得し、設定されたキーワードに基づいてフィルタリングしてSlackに通知するボットです。
 
 </div>
 
@@ -16,9 +16,21 @@ arXiv（学術論文のプレプリントサーバー）から新着論文を取
 - **翻訳機能**: Google Cloud Translation APIを使用した要約の翻訳（オプション）
 - **GitHub Actions対応**: 定期実行による自動化
 
+## 利用方法
+
+### 準備・セットアップ
+#### 1.リポジトリのフォーク
+このリポジトリをフォークして自分のアカウントにリポジトリを作成してください．
+
+#### 2.各種Keyを取得
+`SLACK_WEBHOOK_URL`：配信するSlack
+`GOOGLE_CREDENTIALS_BASE64`：abstractを日本語に翻訳して表示する場合のみ必要
+
+### カスタマイズ
+自分の研究テーマに合わせて論文のカテゴリ・キーワードを設定します．
 
 
-
+### GitHub Actionsでの運用
 
 
 
