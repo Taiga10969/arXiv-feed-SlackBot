@@ -4,14 +4,14 @@
 keywords:
   # 機械学習・AI関連
   - "vector graphics|vector|graphics"
-  - "diffusion"
-  - "LoRA"
+  - "code|code generation"
   - "RAG|retrieval-augmented generation|retrieval-augmented generation|retrieval augmented generation"
   - "LLM|large language model|large language models"
   - "TikZ"
   - "LaTeX|latex"
   - "SVG|Scalable Vector Graphics|scalable vector graphics"
   - "agent|agentic|agentic model|agentic models"
+
   
 # 正規表現の使用例
 # 複数のキーワードをOR条件で指定したい場合:
