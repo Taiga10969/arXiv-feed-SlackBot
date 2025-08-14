@@ -2,7 +2,7 @@
 
 arXiv（学術論文のプレプリントサーバー）から新着論文を取得し、設定されたキーワードに基づいてフィルタリングしてSlackに通知するPythonボットです。
 
-## 特徴
+## 🚀 特徴
 
 - **自動論文取得**: 指定されたarXivカテゴリから新着論文を自動取得
 - **キーワードフィルタリング**: タイトルや要約に特定キーワードが含まれる論文のみを抽出
@@ -10,13 +10,75 @@ arXiv（学術論文のプレプリントサーバー）から新着論文を取
 - **重複防止**: 既読管理により同じ論文の重複通知を防止
 - **Slack通知**: フィルタリングされた論文をSlackに自動投稿
 - **翻訳機能**: Google Cloud Translation APIを使用した要約の翻訳（オプション）
+- **GitHub Actions対応**: 定期実行による自動化
 
-## 設定ファイル
+## 📋 目次
+
+- [セットアップ](#セットアップ)
+- [設定ファイル](#設定ファイル)
+- [GitHub Actionsでの運用](#github-actionsでの運用)
+- [手動実行](#手動実行)
+- [トラブルシューティング](#トラブルシューティング)
+- [カスタマイズ](#カスタマイズ)
+
+## 🛠️ セットアップ
+
+### 1. リポジトリのクローン
+
+```bash
+git clone https://github.com/your-username/arXiv-feed-SlackBot.git
+cd arXiv-feed-SlackBot
+```
+
+### 2. 依存関係のインストール
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. 設定ファイルの準備
+
+設定ファイルの詳細は[設定ファイル](#設定ファイル)セクションを参照してください。
+
+## ⚙️ 設定ファイル
 
 ### メイン設定 (`configs/config.yaml`)
+
 基本的な動作設定を行います。
 
+```yaml
+timezone: "Asia/Tokyo"          # タイムゾーン
+
+# カテゴリとキーワードの設定ファイルパス
+categories_file: "configs/categories.yaml"
+keywords_file: "configs/keywords.yaml"
+
+# 検索設定
+search:
+  hours_back: 48             # 過去何時間分の論文を検索するか
+
+# 通知設定
+max_posts: 15                # 1回の通知で送る最大件数
+
+# 表示設定
+display:
+  show_keywords: true        # マッチしたキーワードを表示
+  show_abstract: false       # 論文の概要を表示
+
+# Slack設定
+slack:
+  username: "arXiv-feed-SlackBot"
+  icon_url: "https://example.com/icon.png"
+
+# 翻訳設定
+translate:
+  enabled: false             # 翻訳機能を有効にするかどうか
+  target_language: "ja"      # 翻訳先言語
+  show_translated: false     # 翻訳された概要を表示するかどうか
+```
+
 ### カテゴリ設定 (`configs/categories.yaml`)
+
 興味のあるarXivカテゴリを指定します。
 
 ```yaml
@@ -28,6 +90,7 @@ categories:
 ```
 
 ### キーワード設定 (`configs/keywords.yaml`)
+
 通知したい論文に含まれるキーワードを指定します。
 
 ```yaml
@@ -38,108 +101,227 @@ keywords:
   - "TikZ"
 ```
 
-### 表示設定
-メイン設定ファイル (`configs/config.yaml`) の `display` セクションで、Slackに表示する内容を制御できます。
+## 🚀 GitHub Actionsでの運用
+
+### 1. リポジトリの設定
+
+#### Secrets の設定
+
+リポジトリの "Settings" > "Secrets and variables" > "Actions" で以下を設定：
+
+**必須設定:**
+- `SLACK_WEBHOOK_URL`: SlackのWebhook URL
+
+**翻訳機能を使用する場合（オプション）:**
+- `GOOGLE_CREDENTIALS_BASE64`: GCP認証情報（Base64エンコード済み）
+
+#### Slack Webhook URL の取得
+
+1. Slackワークスペースでアプリを作成
+2. "Incoming Webhooks" を有効化
+3. 通知したいチャンネルを選択
+4. Webhook URLをコピーしてSecretsに設定
+
+### 2. ワークフローの設定
+
+`.github/workflows/arxiv-feed-SlackBot.yml` が自動的に設定されます。
+
+#### 実行スケジュール
+
+```yaml
+on:
+  schedule:
+    - cron: "0 0 * * *"      # 毎日UTC 00:00（日本時間09:00）
+  workflow_dispatch:          # 手動実行も可能
+```
+
+#### カスタムスケジュール
+
+必要に応じて `cron` を変更：
+
+```yaml
+# 毎週月曜日の09:00（日本時間）
+- cron: "0 0 * * 1"
+
+# 毎日2回（09:00と21:00）
+- cron: "0 0,12 * * *"
+
+# 平日のみ
+- cron: "0 0 * * 1-5"
+```
+
+### 3. 初回実行
+
+1. リポジトリにプッシュ
+2. GitHub Actionsが自動的に実行開始
+3. "Actions" タブで実行状況を確認
+
+### 4. 実行ログの確認
+
+GitHub Actionsの実行ログで以下を確認：
+
+- 論文の取得状況
+- フィルタリング結果
+- Slack通知の成功/失敗
+- エラーの詳細
+
+## 🖥️ 手動実行
+
+### ローカル環境での実行
+
+```bash
+# 基本実行
+python src/main.py --config configs/config.yaml
+
+# 環境変数の設定
+export SLACK_WEBHOOK_URL="your_slack_webhook_url"
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/credentials.json"
+
+# 実行
+python src/main.py --config configs/config.yaml
+```
+
+### Docker での実行
+
+```bash
+# Dockerfile が提供されている場合
+docker build -t arxiv-feed-slackbot .
+docker run -e SLACK_WEBHOOK_URL="your_url" arxiv-feed-slackbot
+```
+
+## 🔧 カスタマイズ
+
+### カテゴリの追加・変更
+
+`configs/categories.yaml` を編集：
+
+```yaml
+categories:
+  - cs.CV    # Computer Vision
+  - cs.AI    # Artificial Intelligence
+  - cs.LG    # Machine Learning
+  - cs.CL    # Computation and Language
+  - cs.NE    # Neural and Evolutionary Computing
+  - cs.IR    # Information Retrieval
+  - cs.SE    # Software Engineering
+  - cs.DC    # Distributed, Parallel, and Cluster Computing
+```
+
+### キーワードの調整
+
+`configs/keywords.yaml` を編集：
+
+```yaml
+keywords:
+  # 機械学習・AI関連
+  - "transformer"
+  - "attention"
+  - "neural network"
+  
+  # 正規表現を使用した複数キーワード
+  - "vision-language|VLM|caption"
+  - "detection|segmentation"
+```
+
+### 検索時間の調整
+
+`configs/config.yaml` の `search.hours_back` を変更：
+
+```yaml
+search:
+  hours_back: 24    # 過去24時間
+  # hours_back: 48  # 過去48時間
+  # hours_back: 168 # 過去1週間
+```
+
+### 表示内容のカスタマイズ
+
+`configs/config.yaml` の `display` セクションを調整：
 
 ```yaml
 display:
-  show_keywords: true      # マッチしたキーワードを表示
-  show_abstract: false     # 論文の概要を表示
-  show_translate: false    # 翻訳された概要を表示（翻訳が有効な場合のみ）
+  show_keywords: true      # キーワードを表示
+  show_abstract: true      # 概要を表示
 ```
 
-## 使用方法
+## 🐛 トラブルシューティング
 
-1. **設定ファイルの編集**
-   - `configs/categories.yaml`: 興味のある分野のカテゴリを設定
-   - `configs/keywords.yaml`: 追跡したいキーワードを設定
+### よくある問題と解決方法
 
-2. **環境変数の設定**
-   ```bash
-   export SLACK_WEBHOOK_URL="your_slack_webhook_url"
-   ```
+#### 1. Slack通知が失敗する
 
-3. **実行**
-   ```bash
-   python src/main.py --config configs/config.yaml
-   ```
+**症状**: `400 Client Error: Bad Request`
 
-## カテゴリ一覧（参考）
+**原因と解決方法**:
+- Webhook URLが正しく設定されているか確認
+- Slackアプリの権限設定を確認
+- 通知チャンネルが存在するか確認
 
-- `cs.CV`: Computer Vision and Pattern Recognition
-- `cs.AI`: Artificial Intelligence
-- `cs.LG`: Machine Learning
-- `cs.CL`: Computation and Language
-- `cs.NE`: Neural and Evolutionary Computing
-- `cs.IR`: Information Retrieval
-- `cs.SE`: Software Engineering
-- `cs.DC`: Distributed, Parallel, and Cluster Computing
+#### 2. 論文が取得できない
 
-## 依存関係
+**症状**: "No papers fetched from arXiv"
+
+**原因と解決方法**:
+- インターネット接続を確認
+- arXivのサービス状況を確認
+- カテゴリ設定が正しいか確認
+
+#### 3. 翻訳機能が動作しない
+
+**症状**: "Translation failed"
+
+**原因と解決方法**:
+- GCP認証情報が正しく設定されているか確認
+- Cloud Translation APIが有効化されているか確認
+- クォータ制限に達していないか確認
+
+#### 4. GitHub Actionsが失敗する
+
+**症状**: ワークフローが失敗する
+
+**原因と解決方法**:
+- Secretsが正しく設定されているか確認
+- 依存関係のインストールが成功しているか確認
+- 設定ファイルの構文が正しいか確認
+
+### ログの確認方法
+
+#### GitHub Actions のログ
+
+1. リポジトリの "Actions" タブを開く
+2. 失敗したワークフローをクリック
+3. 失敗したジョブをクリック
+4. 詳細なログを確認
+
+#### ローカル実行時のログ
 
 ```bash
-pip install -r requirements.txt
+# 詳細ログを有効化
+export PYTHONPATH=.
+python src/main.py --config configs/config.yaml 2>&1 | tee arxiv-bot.log
 ```
 
-## GitHub Actionsでの使用
 
-GitHub Actionsでは以下のSecretsを設定してください：
+## 🤝 貢献
 
-### 必須設定
-- `SLACK_WEBHOOK_URL`: SlackのWebhook URL
+### バグ報告
 
-### 翻訳機能を使用する場合（オプション）
-- `GOOGLE_CREDENTIALS_BASE64`: GCP認証情報（Base64エンコード済み）
+1. GitHub Issues で問題を報告
+2. 再現手順を詳細に記載
+3. エラーログを添付
 
-## GCP認証の設定手順（翻訳機能使用時）
+### 機能要望
 
-翻訳機能を使用する場合は、以下の手順でGCP認証を設定してください：
+1. GitHub Issues で要望を記載
+2. ユースケースを具体的に説明
+3. 実装案があれば提案
 
-### 1. Google Cloud Projectの準備
-1. [Google Cloud Console](https://console.cloud.google.com/)にアクセス
-2. プロジェクトを作成または選択
-3. Cloud Translation APIを有効化
+### プルリクエスト
 
-### 2. サービスアカウントの作成
-1. IAM & Admin > Service Accounts に移動
-2. "Create Service Account" をクリック
-3. サービスアカウント名を入力（例: `arxiv-translate-bot`）
-4. "Create and Continue" をクリック
+1. 機能ブランチを作成
+2. 変更内容を明確に記載
+3. テストを実行してから提出
 
-### 3. 権限の設定
-1. "Grant this service account access to project" で以下を選択：
-   - `Cloud Translation API User`
-2. "Continue" をクリック
-3. "Done" をクリック
+## お問い合わせ
 
-### 4. キーの作成
-1. 作成したサービスアカウントをクリック
-2. "Keys" タブを選択
-3. "Add Key" > "Create new key" をクリック
-4. "JSON" を選択して "Create" をクリック
-5. ダウンロードされたJSONファイルを保存
-
-### 5. Base64エンコード
-```bash
-# macOS/Linux
-base64 -i path/to/service-account-key.json
-
-# Windows (PowerShell)
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("path/to/service-account-key.json"))
-```
-
-### 6. GitHub Secretsの設定
-1. リポジトリの "Settings" > "Secrets and variables" > "Actions" に移動
-2. "New repository secret" をクリック
-3. Name: `GOOGLE_CREDENTIALS_BASE64`
-4. Value: ステップ5で生成したBase64文字列
-5. "Add secret" をクリック
-
-### 7. 設定ファイルの更新
-`configs/config.yaml` で翻訳機能を有効化：
-
-```yaml
-translate:
-  enabled: true
-  target_language: "ja"  # 翻訳先言語
-```
+問題や質問がある場合は、GitHub Issues でお気軽にお問い合わせください。

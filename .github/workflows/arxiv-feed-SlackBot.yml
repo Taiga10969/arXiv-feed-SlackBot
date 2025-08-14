@@ -53,7 +53,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           # 設定ファイルを指定してメインスクリプトを実行
-          python src/main.py --config configs/arxiv-feed-SlackBot.yaml
+          python src/main.py --config configs/config.yaml
 
       # ステップ6: 既読ファイルの永続化（推奨）
       # 処理済みの論文IDを保存して、重複通知を防ぐ

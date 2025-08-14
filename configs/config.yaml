@@ -5,6 +5,10 @@ timezone: "Asia/Tokyo"          # タイムゾーン。通知時刻や日付表�
 categories_file: "configs/categories.yaml"    # arXivカテゴリ設定ファイル
 keywords_file: "configs/keywords.yaml"        # キーワード設定ファイル
 
+# 検索設定
+search:
+  hours_back: 48             # 過去何時間分の論文を検索するか（例: 24 = 過去24時間、48 = 過去48時間）
+
 # 1回の通知で送る最大件数（ヒットが多すぎる場合の上限）
 max_posts: 15   
 
@@ -12,18 +16,18 @@ max_posts: 15
 display:
   show_keywords: true      # マッチしたキーワードを表示
   show_abstract: false     # 論文の概要を表示
-  show_translate: false    # 翻訳された概要を表示（翻訳が有効な場合のみ）
 
 # Slackに表示されるBot名（送信者名）
 slack:
   username: "arXiv-feed-SlackBot"
-  icon_emoji: ""
+  icon_url: "https://avatars.githubusercontent.com/u/45442578?s=280&v=4"
 
 # 既読管理ファイル名（data/seen_taiga.json として保存される）
 # 通知済みのarXiv IDを記録し、重複通知を防ぐために使用
 state_file: "seen.json"   
                                 
-# 翻訳（任意）
+# 翻訳設定
 translate:
-  enabled: false                # trueにすると要約文を翻訳して通知（Google Cloud Translation API利用）
+  enabled: false                # 翻訳機能を有効にするかどうか
   target_language: "ja"         # 翻訳先言語（例: "ja"=日本語, "en"=英語）
+  show_translated: false        # 翻訳された概要を表示するかどうか（enabled=trueの場合のみ有効）
