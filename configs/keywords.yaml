@@ -3,21 +3,16 @@
 
 keywords:
   # 機械学習・AI関連
-  - "vector"
+  - "vector graphics|vector|graphics"
   - "diffusion"
   - "LoRA"
-  
-  # 図表・可視化関連
+  - "RAG|retrieval-augmented generation|retrieval-augmented generation|retrieval augmented generation"
+  - "LLM|large language model|large language models"
   - "TikZ"
+  - "LaTeX|latex"
+  - "SVG|Scalable Vector Graphics|scalable vector graphics"
+  - "agent|agentic|agentic model|agentic models"
   
-  # 追加したいキーワードは以下に記述
-  # - "transformer"
-  # - "attention"
-  # - "neural network"
-  # - "deep learning"
-  # - "computer vision"
-  # - "natural language processing"
-
 # 正規表現の使用例
 # 複数のキーワードをOR条件で指定したい場合:
 # - "vision-language|VLM|caption"  # vision-language または VLM または caption
