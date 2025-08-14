@@ -4,7 +4,7 @@
 
 # arXiv-feed-SlackBot
 
-arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー）から新着論文を取得し、設定されたキーワードに基づいてフィルタリングしてSlackに通知するボットです。
+arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー）から新着論文を取得し，設定されたキーワードに基づいてフィルタリングしてSlackに通知するボットです．
 
 <img src="https://raw.githubusercontent.com/Taiga10969/arXiv-feed-SlackBot/refs/heads/main/data/image/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88%202025-08-14%2016.31.10.png" alt="arXiv-feed-SlackBot" width="350">
 
@@ -29,12 +29,12 @@ arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー�
 #### 2. 各種Keyを取得
 
 - `SLACK_WEBHOOK_URL`  
-  配信するSlackチャンネルの Incoming Webhook URL を設定します。  
-  Slack ワークスペースで **Incoming Webhooks** を追加し、対象チャンネルを選んで生成された URL を使用してください。
+  配信するSlackチャンネルの Incoming Webhook URL を設定します．  
+  Slack ワークスペースで **Incoming Webhooks** を追加し，対象チャンネルを選んで生成された URL を使用してください．
 
 - `GOOGLE_CREDENTIALS_BASE64`（任意）  
-  abstract を日本語に翻訳して表示する場合のみ必要です。  
-  [Google Cloud Console](https://console.cloud.google.com/) で以下の手順を行います。
+  abstract を日本語に翻訳して表示する場合のみ必要です．  
+  [Google Cloud Console](https://console.cloud.google.com/) で以下の手順を行います．
 
   1. **Cloud Translation API** を有効化  
   2. **課金**を有効化（無料枠はありますが課金設定が必要です）  
@@ -49,14 +49,14 @@ arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー�
        ```powershell
        [Convert]::ToBase64String([IO.File]::ReadAllBytes("path\to\your-service-account.json")) > credentials.json.b64
        ```
-  5. GitHub のリポジトリで **Settings → Secrets and variables → Actions → New repository secret** を開き、  
-     Name に `GOOGLE_CREDENTIALS_BASE64`、Secret に `credentials.json.b64` の中身を貼り付けて保存します。
+  5. GitHub のリポジトリで **Settings → Secrets and variables → Actions → New repository secret** を開き，  
+     Name に `GOOGLE_CREDENTIALS_BASE64`，Secret に `credentials.json.b64` の中身を貼り付けて保存します．
 
 ### カスタマイズ
 自分の研究テーマに合わせて論文のカテゴリ・キーワードを設定します．
 
 #### 1. 検索カテゴリの設定
-`configs/categories.yaml`の中身を編集して、興味のあるarXivカテゴリを設定してください。
+`configs/categories.yaml`の中身を編集して，興味のあるarXivカテゴリを設定してください．
 
 ```yaml
 categories:
@@ -67,7 +67,7 @@ categories:
 ```
 
 #### 2. 検索キーワードの設定
-`configs/keywords.yaml`の中身を編集して、興味のあるキーワードを設定してください。
+`configs/keywords.yaml`の中身を編集して，興味のあるキーワードを設定してください．
 
 ```yaml
 keywords:
@@ -82,7 +82,7 @@ keywords:
 
 - 検索時間範囲（`hours_back`）
 - 最大通知件数（`max_posts`）
-- 表示オプション（キーワード、要約の表示）
+- 表示オプション（キーワード，要約の表示）
 - 翻訳設定
 - Slack通知設定
 くわしくは，下部の `（補足）設定ファイルの詳細` を御覧ください．
@@ -117,7 +117,7 @@ GitHub Actionsのワークフローが正しく動作するかを確認する方
 
 #### 3. 定期実行の設定
 
-GitHub Actionsでの定期実行を設定するには、`.github/workflows/arxiv-feed-SlackBot.yml`ファイルを確認：
+GitHub Actionsでの定期実行を設定するには，`.github/workflows/arxiv-feed-SlackBot.yml`ファイルを確認：
 
 ```yaml
 name: arXiv Bot
@@ -132,7 +132,7 @@ on:
 
 
 **cron式の説明：**
-- `0 */6 * * *`: 毎時0分に6時間ごと（0時、6時、12時、18時）
+- `0 */6 * * *`: 毎時0分に6時間ごと（0時，6時，12時，18時）
 - `0 9,18 * * *`: 毎日9時と18時
 - `0 9 * * 1-5`: 平日（月〜金）の9時
 - `0 0 * * *`: 毎日0時（日次実行）
@@ -142,12 +142,12 @@ on:
 ## （補足）設定ファイルの詳細
 
 ### config.yaml
-メインの設定ファイルです。以下の項目を設定できます：
+メインの設定ファイルです．以下の項目を設定できます：
 
 - **timezone**: タイムゾーン設定
 - **search.hours_back**: 過去何時間分の論文を検索するか
 - **max_posts**: 1回の通知で送る最大件数
-- **display**: 表示オプション（キーワード、要約の表示）
+- **display**: 表示オプション（キーワード，要約の表示）
 - **slack**: Slack通知設定
 - **translate**: 翻訳機能の設定
 
@@ -163,15 +163,15 @@ translate:
 ```
 
 **設定の動作パターン：**
-- `enabled: true` + `show_translated: true` + `hide_original_when_translated: true` → 英語のabstractは非表示、日本語翻訳のみ表示
+- `enabled: true` + `show_translated: true` + `hide_original_when_translated: true` → 英語のabstractは非表示，日本語翻訳のみ表示
 - `enabled: true` + `show_translated: true` + `hide_original_when_translated: false` → 英語のabstractと日本語翻訳の両方表示
-- `enabled: false` → 翻訳機能無効、英語のabstractのみ表示（`show_abstract: true`の場合）
+- `enabled: false` → 翻訳機能無効，英語のabstractのみ表示（`show_abstract: true`の場合）
 
 ### categories.yaml
-arXivカテゴリの設定ファイルです。複数のカテゴリを指定できます。
+arXivカテゴリの設定ファイルです．複数のカテゴリを指定できます．
 
 ### keywords.yaml
-検索キーワードの設定ファイルです。正規表現を使用してOR条件での指定も可能です。
+検索キーワードの設定ファイルです．正規表現を使用してOR条件での指定も可能です．
 
 ## 技術仕様
 
@@ -202,4 +202,4 @@ arXivカテゴリの設定ファイルです。複数のカテゴリを指定で
 
 ## 貢献
 
-バグ報告や機能要望、プルリクエストを歓迎します。貢献する前に、まずissueを作成して議論してください。
+バグ報告や機能要望，プルリクエストを歓迎します．貢献する前に，まずissueを作成して議論してください．
