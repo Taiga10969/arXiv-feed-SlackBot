@@ -51,6 +51,10 @@ arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー�
        ```
   5. GitHub のリポジトリで **Settings → Secrets and variables → Actions → New repository secret** を開き，  
      Name に `GOOGLE_CREDENTIALS_BASE64`，Secret に `credentials.json.b64` の中身を貼り付けて保存します．
+     
+#### 3. 閲覧済み論文一覧のリセット
+`seen.json`のファイルの中身を空リスト(`[]`)に変えてください．<br>
+フォークしただけですと，私（開発者）の閲覧済みのリストになっています．
 
 ### カスタマイズ
 自分の研究テーマに合わせて論文のカテゴリ・キーワードを設定します．
