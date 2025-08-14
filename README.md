@@ -19,49 +19,20 @@ arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー�
 ## 利用方法
 
 ### 準備・セットアップ
+最初にこのプロジェクトで必要なAPI keyなどを準備します
+
 #### 1.リポジトリのフォーク
 このリポジトリをフォークして自分のアカウントにリポジトリを作成してください．
 
 #### 2.各種Keyを取得
-`SLACK_WEBHOOK_URL`：配信するSlack
-`GOOGLE_CREDENTIALS_BASE64`：abstractを日本語に翻訳して表示する場合のみ必要
+- `SLACK_WEBHOOK_URL`：配信するSlackのWebhook URL
+- `GOOGLE_CREDENTIALS_BASE64`：abstractを日本語に翻訳して表示する場合のみ必要
 
 ### カスタマイズ
 自分の研究テーマに合わせて論文のカテゴリ・キーワードを設定します．
 
-
-### GitHub Actionsでの運用
-
-
-
-## 📋 目次
-
-- [セットアップ](#セットアップ)
-- [設定ファイル](#設定ファイル)
-- [GitHub Actionsでの運用](#github-actionsでの運用)
-
-## 🛠️ セットアップ（推奨方法）
-
-### 1. リポジトリのフォーク
-
-1. GitHub上で「Fork」ボタンをクリック
-2. 自分のアカウントにリポジトリが作成される
-
-
-### 2. 設定ファイルの修正
-
-その他の設定ファイルの詳細は[設定ファイル](#設定ファイル)セクションを参照してください。
-
-
-
-## ⚙️ 設定ファイル
-
-### メイン設定 (`configs/config.yaml`)
-基本的な動作設定を行います。
-
-### カテゴリ設定 (`configs/categories.yaml`)
-
-興味のあるarXivカテゴリを指定します。
+#### 1. 検索カテゴリの設定
+`configs/categories.yaml`の中身を編集して、興味のあるarXivカテゴリを設定してください。
 
 ```yaml
 categories:
@@ -71,24 +42,125 @@ categories:
   - cs.CL    # 自然言語処理
 ```
 
-### キーワード設定 (`configs/keywords.yaml`)
-
-通知したい論文に含まれるキーワードを指定します。
-指定されたキーワードがタイトル・論文の概要に含まれているかをチェックします．
-
-
-
-### 表示内容のカスタマイズ
-
-`configs/config.yaml` の `display` セクションを調整：
+#### 2. 検索キーワードの設定
+`configs/keywords.yaml`の中身を編集して、興味のあるキーワードを設定してください。
 
 ```yaml
-display:
-  show_keywords: true      # キーワードを表示
-  show_abstract: true      # 概要を表示
+keywords:
+  - "vector"
+  - "diffusion"
+  - "LoRA"
+  - "vision-language|VLM|caption"  # 正規表現も使用可能
 ```
 
+#### 3. その他の設定
+`configs/config.yaml`で以下の設定をカスタマイズできます：
 
-## お問い合わせ
+- 検索時間範囲（`hours_back`）
+- 最大通知件数（`max_posts`）
+- 表示オプション（キーワード、要約の表示）
+- 翻訳設定
+- Slack通知設定
 
-問題や質問がある場合は、GitHub Issues でお気軽にお問い合わせください。
+### GitHub Actionsでの運用
+
+#### 1. 環境変数の設定
+リポジトリのSettings → Secrets and variables → Actionsで以下の環境変数を設定：
+
+- `SLACK_WEBHOOK_URL`: SlackのWebhook URL
+- `GOOGLE_CREDENTIALS_BASE64`: 翻訳機能を使用する場合のGoogle Cloud認証情報（keyのjsonファイルをBASE64でエンコードして保存）
+
+#### 2. Run workflowの確認
+
+GitHub Actionsのワークフローが正しく動作するかを確認する方法：
+
+1. **手動実行での確認**
+   - リポジトリの「Actions」タブを開く
+   - 「arXiv Bot」ワークフローを選択
+   - 「Run workflow」ボタンをクリック
+   - ブランチを選択して「Run workflow」を実行
+
+2. **実行結果の確認**
+   - ワークフローの実行状況をリアルタイムで確認
+   - 各ステップのログを確認してエラーがないかチェック
+   - Slackに通知が届くか確認
+
+3. **定期実行の確認**
+   - 設定したcronスケジュールで自動実行される
+   - 「Actions」タブで定期実行の履歴を確認可能
+   - 最新の実行時刻と次回実行予定時刻を確認
+
+#### 3. 定期実行の設定
+
+GitHub Actionsでの定期実行を設定するには、`.github/workflows/arxiv-feed-SlackBot.yml`ファイルを確認：
+
+```yaml
+name: arXiv Bot
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # 6時間ごとに実行（毎時0分）
+    # 他のスケジュール例：
+    # - cron: '0 9,18 * * *'  # 毎日9時と18時に実行
+    # - cron: '0 9 * * 1-5'   # 平日の9時に実行
+  workflow_dispatch:  # 手動実行も可能
+
+
+**cron式の説明：**
+- `0 */6 * * *`: 毎時0分に6時間ごと（0時、6時、12時、18時）
+- `0 9,18 * * *`: 毎日9時と18時
+- `0 9 * * 1-5`: 平日（月〜金）の9時
+- `0 0 * * *`: 毎日0時（日次実行）
+
+
+## （補足）設定ファイルの詳細
+
+### config.yaml
+メインの設定ファイルです。以下の項目を設定できます：
+
+- **timezone**: タイムゾーン設定
+- **search.hours_back**: 過去何時間分の論文を検索するか
+- **max_posts**: 1回の通知で送る最大件数
+- **display**: 表示オプション（キーワード、要約の表示）
+- **slack**: Slack通知設定
+- **translate**: 翻訳機能の設定
+
+### categories.yaml
+arXivカテゴリの設定ファイルです。複数のカテゴリを指定できます。
+
+### keywords.yaml
+検索キーワードの設定ファイルです。正規表現を使用してOR条件での指定も可能です。
+
+## 技術仕様
+
+- **Python 3.9+**: メインの実行環境
+- **arXiv Atom API**: 論文データの取得
+- **Slack Webhook API**: 通知の送信
+- **Google Cloud Translation API**: 翻訳機能（オプション）
+- **YAML**: 設定ファイルの形式
+- **GitHub Actions**: 定期実行の自動化
+
+## トラブルシューティング
+
+### よくある問題
+
+1. **Slack通知が送信されない**
+   - `SLACK_WEBHOOK_URL`が正しく設定されているか確認
+   - Webhook URLが有効か確認
+
+2. **翻訳機能が動作しない**
+   - `GOOGLE_CREDENTIALS_BASE64`が設定されているか確認
+   - Google Cloud Translation APIが有効化されているか確認
+
+3. **論文が取得されない**
+   - カテゴリ設定が正しいか確認
+   - ネットワーク接続を確認
+
+
+## ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
+
+## 貢献
+
+バグ報告や機能要望、プルリクエストを歓迎します。貢献する前に、まずissueを作成して議論してください。
