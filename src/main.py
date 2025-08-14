@@ -206,21 +206,29 @@ def select_by_relevance(
     hours_back = CONFIG.get("search", {}).get("hours_back", 24)
     
     for item in items:
+        print(f"[DEBUG] Processing item: {item['id']} - {item['title'][:50]}...")
+        
         if item["id"] in SEEN:
+            print(f"[DEBUG] Item {item['id']} already seen, skipping")
             continue
         if not within_search_hours(item["published"], hours_back):
+            print(f"[DEBUG] Item {item['id']} outside search hours, skipping")
             continue
 
         if kw_patterns:
             score, matched_kw = compute_match_score(item["title"], item["summary"], kw_patterns)
+            print(f"[DEBUG] Item {item['id']} score: {score}, keywords: {matched_kw}")
             if score <= 0:
+                print(f"[DEBUG] Item {item['id']} score <= 0, skipping")
                 continue
         else:
             score = 0
             matched_kw = []
+            print(f"[DEBUG] Item {item['id']} no keywords, score: 0")
 
         pub_dt = parse_iso8601(item["published"])
         candidates.append((score, pub_dt, item, matched_kw))
+        print(f"[DEBUG] Item {item['id']} added to candidates")
 
     if not candidates:
         return []
