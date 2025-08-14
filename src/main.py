@@ -159,40 +159,74 @@ def parse_iso8601(s: str) -> dt.datetime:
     """ISO8601文字列をdatetimeオブジェクトに変換"""
     return dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
+# --- 追加: ゆるめ正規表現を生成するユーティリティ ---------------------------
+def _relax(term: str) -> str:
+    """
+    'retrieval-augmented generation' -> 'retrieval[-\\s]*augmented[-\\s]*generation'
+    のように、ハイフン/スペースの揺れや余分な空白を許容する正規表現へ変換。
+    単語境界は付けず、部分一致を許容する（= もともとの挙動を維持/強化）。
+    """
+    parts = re.split(r"\s+", term.strip())
+    escaped = [re.escape(p) for p in parts if p]
+    if not escaped:
+        return ""
+    # 各語の間は「ハイフン or 空白が0回以上」
+    return r"(?:%s)" % r"[-\s]*".join(escaped)
+# ----------------------------------------------------------------------
+
 def compile_kw_patterns(kw_list: List[str]) -> List[re.Pattern]:
-    """キーワードリストから正規表現パターンを作成"""
+    """
+    キーワードリストから正規表現パターンを作成。
+    - '|' を含む文字列は **ユーザー指定の正規表現**としてそのまま採用（部分一致OK）
+    - それ以外は _relax により揺れを許容した“ゆるめ正規表現”に変換（部分一致OK）
+    """
     if not kw_list:
         return []
     
     patterns: List[re.Pattern] = []
     for kw in kw_list:
         if "|" in kw:
-            patterns.append(re.compile(kw, re.IGNORECASE))
+            # OR を含むものはユーザー定義の正規表現として採用
+            try:
+                patterns.append(re.compile(kw, re.IGNORECASE))
+            except re.error as e:
+                print(f"[WARN] Invalid regex in keyword (kept as literal): {kw} ({e})")
+                patterns.append(re.compile(re.escape(kw), re.IGNORECASE))
         else:
-            patterns.append(re.compile(re.escape(kw), re.IGNORECASE))
+            relaxed = _relax(kw)
+            if relaxed:
+                patterns.append(re.compile(relaxed, re.IGNORECASE))
     return patterns
 
 def compute_match_score(title: str, summary: str, patterns: List[re.Pattern]) -> Tuple[int, List[str]]:
-    """一致スコアとマッチしたキーワードを計算"""
+    """一致スコアとマッチしたキーワードを計算（タイトル×2 + 要約×1）"""
     if not patterns:
         return 0, []
     
     score_title = 0
     score_summary = 0
-    matched_keywords = set()
-    
+    matched_keywords = []
+
     for pattern in patterns:
-        title_matches = pattern.findall(title)
-        summary_matches = pattern.findall(summary)
-        
-        if title_matches:
-            score_title += len(title_matches)
-            matched_keywords.add(pattern.pattern)
-        if summary_matches:
-            score_summary += len(summary_matches)
-            matched_keywords.add(pattern.pattern)
-    
-    return score_title * 2 + score_summary * 1, list(matched_keywords)
+        t_hits = pattern.findall(title)
+        s_hits = pattern.findall(summary)
+
+        if t_hits:
+            score_title += len(t_hits)
+            matched_keywords.append(pattern.pattern)
+        if s_hits:
+            score_summary += len(s_hits)
+            matched_keywords.append(pattern.pattern)
+
+    # 重複除去して返す（順序保持）
+    seen_set = set()
+    matched_uniq = []
+    for k in matched_keywords:
+        if k not in seen_set:
+            matched_uniq.append(k)
+            seen_set.add(k)
+
+    return score_title * 2 + score_summary, matched_uniq
 
 def select_by_relevance(
     items: List[Dict[str, Any]],
