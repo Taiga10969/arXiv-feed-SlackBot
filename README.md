@@ -149,6 +149,22 @@ on:
 - **slack**: Slack通知設定
 - **translate**: 翻訳機能の設定
 
+#### 翻訳設定の詳細
+翻訳機能では以下の設定が可能です：
+
+```yaml
+translate:
+  enabled: true                # 翻訳機能を有効にするかどうか
+  target_language: "ja"         # 翻訳先言語（例: "ja"=日本語, "en"=英語）
+  show_translated: true        # 翻訳された概要を表示するかどうか（enabled=trueの場合のみ有効）
+  hide_original_when_translated: true  # 翻訳表示時に元の英語概要を非表示にするかどうか
+```
+
+**設定の動作パターン：**
+- `enabled: true` + `show_translated: true` + `hide_original_when_translated: true` → 英語のabstractは非表示、日本語翻訳のみ表示
+- `enabled: true` + `show_translated: true` + `hide_original_when_translated: false` → 英語のabstractと日本語翻訳の両方表示
+- `enabled: false` → 翻訳機能無効、英語のabstractのみ表示（`show_abstract: true`の場合）
+
 ### categories.yaml
 arXivカテゴリの設定ファイルです。複数のカテゴリを指定できます。
 
