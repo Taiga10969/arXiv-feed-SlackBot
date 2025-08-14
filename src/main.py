@@ -342,6 +342,7 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_cou
         translate_config = CONFIG.get("translate", {})
         translate_enabled = translate_config.get("enabled", False)
         show_translated = translate_config.get("show_translated", False)
+        hide_original_when_translated = translate_config.get("hide_original_when_translated", False)
 
         for item, matched_keywords in entries:
             title = item["title"]
@@ -376,8 +377,8 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_cou
                     print(f"[WARN] Error processing keywords for {item['id']}: {e}")
                     blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": "*キーワード:* エラーが発生しました"}})
             
-            # 概要表示
-            if show_abstract:
+            # 概要表示（翻訳表示時は英語のabstractを非表示にする）
+            if show_abstract and not (translate_enabled and show_translated and hide_original_when_translated):
                 abstract_text = summary[:2800] + "..." if len(summary) > 2800 else summary
                 safe_abstract = clean_text_for_slack(abstract_text)
                 blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"*Abstract:* {safe_abstract}"}})
