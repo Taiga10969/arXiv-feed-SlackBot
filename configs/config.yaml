@@ -7,7 +7,7 @@ keywords_file: "configs/keywords.yaml"        # キーワード設定ファイ�
 
 # 検索設定
 search:
-  hours_back: 48             # 過去何時間分の論文を検索するか（例: 24 = 過去24時間、48 = 過去48時間）
+  hours_back: 24             # 過去何時間分の論文を検索するか（例: 24 = 過去24時間、48 = 過去48時間）
 
 # 1回の通知で送る最大件数（ヒットが多すぎる場合の上限）
 max_posts: 10   
@@ -20,7 +20,7 @@ display:
 # Slackに表示されるBot名（送信者名）
 slack:
   username: "arXiv-feed-SlackBot"
-  icon_url: https://taiga10969.github.io/images/arXiv-feed-SlackBot.png"
+  icon_url: "https://taiga10969.github.io/images/arXiv-feed-SlackBot.png"
 
 # 既読管理ファイル名（data/seen_taiga.json として保存される）
 # 通知済みのarXiv IDを記録し、重複通知を防ぐために使用
@@ -28,7 +28,7 @@ state_file: "seen.json"
                                 
 # 翻訳設定
 translate:
-  enabled: false                # 翻訳機能を有効にするかどうか
+  enabled: true                # 翻訳機能を有効にするかどうか
   target_language: "ja"         # 翻訳先言語（例: "ja"=日本語, "en"=英語）
   show_translated: true        # 翻訳された概要を表示するかどうか（enabled=trueの場合のみ有効）
   hide_original_when_translated: true  # 翻訳表示時に元の英語概要を非表示にするかどうか
