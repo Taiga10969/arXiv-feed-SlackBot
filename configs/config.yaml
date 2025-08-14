@@ -15,12 +15,12 @@ max_posts: 15
 # 表示設定
 display:
   show_keywords: true      # マッチしたキーワードを表示
-  show_abstract: false     # 論文の概要を表示
+  show_abstract: true     # 論文の概要を表示
 
 # Slackに表示されるBot名（送信者名）
 slack:
   username: "arXiv-feed-SlackBot"
-  icon_url: "https://avatars.githubusercontent.com/u/45442578?s=280&v=4"
+  icon_url: https://taiga10969.github.io/images/arXiv-feed-SlackBot.png"
 
 # 既読管理ファイル名（data/seen_taiga.json として保存される）
 # 通知済みのarXiv IDを記録し、重複通知を防ぐために使用
@@ -28,6 +28,6 @@ state_file: "seen.json"
                                 
 # 翻訳設定
 translate:
-  enabled: false                # 翻訳機能を有効にするかどうか
+  enabled: true                # 翻訳機能を有効にするかどうか
   target_language: "ja"         # 翻訳先言語（例: "ja"=日本語, "en"=英語）
-  show_translated: false        # 翻訳された概要を表示するかどうか（enabled=trueの場合のみ有効）
+  show_translated: true        # 翻訳された概要を表示するかどうか（enabled=trueの場合のみ有効）
