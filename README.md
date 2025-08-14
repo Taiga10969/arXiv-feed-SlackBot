@@ -24,9 +24,31 @@ arXiv-feed-SlackBotは，arXiv（学術論文のプレプリントサーバー�
 #### 1.リポジトリのフォーク
 このリポジトリをフォークして自分のアカウントにリポジトリを作成してください．
 
-#### 2.各種Keyを取得
-- `SLACK_WEBHOOK_URL`：配信するSlackのWebhook URL
-- `GOOGLE_CREDENTIALS_BASE64`：abstractを日本語に翻訳して表示する場合のみ必要
+#### 2. 各種Keyを取得
+
+- `SLACK_WEBHOOK_URL`  
+  配信するSlackチャンネルの Incoming Webhook URL を設定します。  
+  Slack ワークスペースで **Incoming Webhooks** を追加し、対象チャンネルを選んで生成された URL を使用してください。
+
+- `GOOGLE_CREDENTIALS_BASE64`（任意）  
+  abstract を日本語に翻訳して表示する場合のみ必要です。  
+  [Google Cloud Console](https://console.cloud.google.com/) で以下の手順を行います。
+
+  1. **Cloud Translation API** を有効化  
+  2. **課金**を有効化（無料枠はありますが課金設定が必要です）  
+  3. **サービスアカウント**を作成 → JSON キーを発行してダウンロード  
+     - 役割は最小権限でOK（例：`Cloud Translation API User`）
+  4. JSON キーを Base64 エンコードしてファイルに保存（ローカルで実行）  
+     - macOS / Linux:
+       ```bash
+       base64 -w 0 path/to/your-service-account.json > credentials.json.b64
+       ```
+     - Windows (PowerShell):
+       ```powershell
+       [Convert]::ToBase64String([IO.File]::ReadAllBytes("path\to\your-service-account.json")) > credentials.json.b64
+       ```
+  5. GitHub のリポジトリで **Settings → Secrets and variables → Actions → New repository secret** を開き、  
+     Name に `GOOGLE_CREDENTIALS_BASE64`、Secret に `credentials.json.b64` の中身を貼り付けて保存します。
 
 ### カスタマイズ
 自分の研究テーマに合わせて論文のカテゴリ・キーワードを設定します．
