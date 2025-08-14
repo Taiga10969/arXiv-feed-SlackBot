@@ -159,12 +159,12 @@ def parse_iso8601(s: str) -> dt.datetime:
     """ISO8601文字列をdatetimeオブジェクトに変換"""
     return dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
-# --- 追加: ゆるめ正規表現を生成するユーティリティ ---------------------------
+# --- 揺れに強い“ゆるめ正規表現”生成 ---------------------------------------
 def _relax(term: str) -> str:
     """
     'retrieval-augmented generation' -> 'retrieval[-\\s]*augmented[-\\s]*generation'
     のように、ハイフン/スペースの揺れや余分な空白を許容する正規表現へ変換。
-    単語境界は付けず、部分一致を許容する（= もともとの挙動を維持/強化）。
+    単語境界は付けず、部分一致を許容する。
     """
     parts = re.split(r"\s+", term.strip())
     escaped = [re.escape(p) for p in parts if p]
@@ -270,11 +270,7 @@ def select_by_relevance(
     # スコア降順 → 公開日時降順
     candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
     
-    # デバッグ情報を出力
-    print(f"[DEBUG] select_by_relevance: {len(candidates)} candidates found")
-    print(f"[DEBUG] select_by_relevance: max_posts = {max_posts}")
-    print(f"[DEBUG] select_by_relevance: returning {min(len(candidates), max_posts)} papers")
-    
+    # max_posts 件に制限して返す
     return [(item, matched_kw) for _, _, item, matched_kw in candidates[:max_posts]]
 
 
@@ -366,7 +362,7 @@ def make_slack_blocks(entries: List[Tuple[Dict[str, Any], List[str]]], total_cou
             date_str = "今日"
         
         # ヘッダーテキストの作成（総件数情報を含む）
-        if total_count and displayed_count and total_count > displayed_count:
+        if total_count is not None and displayed_count is not None and total_count >= displayed_count:
             header_text = f"arXiv で公開された新着論文 ({date_str}) - 全{total_count}件中{displayed_count}件表示"
         else:
             header_text = f"arXiv で公開された新着論文 ({date_str})"
@@ -572,34 +568,32 @@ def main() -> None:
             print("[ERROR] No papers fetched from arXiv")
             return
 
-        # 関連論文の選択（max_postsの制限を適用）
-        selected = select_by_relevance(items, kw_patterns, max_posts=max_posts)
-        
-        if not selected:
+        # ============== ここが主な変更点 ==============
+        # まずフィルタを max_posts=全件 で適用して「フィルタ後の総数」を得る
+        filtered_all = select_by_relevance(items, kw_patterns, max_posts=len(items))
+
+        if not filtered_all:
             print("[INFO] No new papers matched criteria")
             blocks = make_no_papers_message()
             post_to_slack_webhook(blocks)
             print("[INFO] Posted 'no papers found' message to Slack")
             return
 
-        # 論文が見つかった場合
-        # 総件数を計算（max_postsを超える場合の表示用）
-        hours_back = CONFIG.get("search", {}).get("hours_back", 24)
-        all_matched = [item for item in items if item["id"] not in SEEN and within_search_hours(item["published"], hours_back)]
-        total_matched = len(all_matched)
-        
-        # 実際に表示される件数（max_postsで制限された件数）
+        # 表示件数を max_posts で制限
+        selected = filtered_all[:max_posts]
+
+        # 「全◯件中◯件表示」の全件はフィルタ後の総数を使う
+        total_matched = len(filtered_all)
         displayed_count = len(selected)
-        
-        # デバッグ情報を出力
-        print(f"[DEBUG] Total matched papers: {total_matched}")
+        print(f"[DEBUG] Total matched papers (after filtering): {total_matched}")
         print(f"[DEBUG] Papers selected for display: {displayed_count}")
         print(f"[DEBUG] Max posts setting: {max_posts}")
-        
+        # ============================================
+
         blocks = make_slack_blocks(selected, total_count=total_matched, displayed_count=displayed_count)
         post_to_slack_webhook(blocks)
 
-        # 既読IDを保存
+        # 既読IDを保存（表示した分のみ既読化）
         for item, _ in selected:
             SEEN.add(item["id"])
         SEEN_PATH.write_text(json.dumps(sorted(SEEN)), encoding="utf-8")
