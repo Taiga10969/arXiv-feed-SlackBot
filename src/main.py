@@ -227,6 +227,12 @@ def select_by_relevance(
 
     # スコア降順 → 公開日時降順
     candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    
+    # デバッグ情報を出力
+    print(f"[DEBUG] select_by_relevance: {len(candidates)} candidates found")
+    print(f"[DEBUG] select_by_relevance: max_posts = {max_posts}")
+    print(f"[DEBUG] select_by_relevance: returning {min(len(candidates), max_posts)} papers")
+    
     return [(item, matched_kw) for _, _, item, matched_kw in candidates[:max_posts]]
 
 
@@ -524,7 +530,7 @@ def main() -> None:
             print("[ERROR] No papers fetched from arXiv")
             return
 
-        # 関連論文の選択
+        # 関連論文の選択（max_postsの制限を適用）
         selected = select_by_relevance(items, kw_patterns, max_posts=max_posts)
         
         if not selected:
@@ -542,6 +548,11 @@ def main() -> None:
         
         # 実際に表示される件数（max_postsで制限された件数）
         displayed_count = len(selected)
+        
+        # デバッグ情報を出力
+        print(f"[DEBUG] Total matched papers: {total_matched}")
+        print(f"[DEBUG] Papers selected for display: {displayed_count}")
+        print(f"[DEBUG] Max posts setting: {max_posts}")
         
         blocks = make_slack_blocks(selected, total_count=total_matched, displayed_count=displayed_count)
         post_to_slack_webhook(blocks)
