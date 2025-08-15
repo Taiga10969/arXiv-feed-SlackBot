@@ -5,8 +5,10 @@ name: arXiv-feed SlackBot
 # ワークフローの実行トリガー
 on:
   schedule:
-    # cron形式: 毎日UTC 00:00（日本時間09:00）に実行
-    - cron: "0 0 * * *"      # UTC 00:00 = JST 09:00
+    ## cron形式: 毎日UTC 00:00（日本時間09:00）に実行
+    #- cron: "0 0 * * *"      # UTC 00:00 = JST 09:00
+    # 毎日 UTC 22:45（日本時間 翌日 7:45）に実行
+    - cron: "45 22 * * *"
   workflow_dispatch:          # 手動実行も可能
 
 # 必要な権限設定
