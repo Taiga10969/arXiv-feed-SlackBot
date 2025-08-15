@@ -5,9 +5,9 @@
 
 keywords:
   - keyword: "vector graphics generation|vector graphic synthesis|vector-based image generation|generative vector graphics|procedural vector graphics"
-    weight: 3
+    weight: 4
   - keyword: "code generation|vector graphics code generation|SVG code generation|TikZ code generation|LaTeX vector graphics generation"
-    weight: 3
+    weight: 4
   - keyword: "RAG|retrieval-augmented generation|retrieval augmented generation"
     weight: 1
   - keyword: "LLM|large language model|large language models|LLM for vector graphics|large language model vector graphics generation"
@@ -19,7 +19,7 @@ keywords:
   - keyword: "SVG generation|Scalable Vector Graphics generation|SVG synthesis|scalable vector graphics generation"
     weight: 2
   - keyword: "xml generation|xml"
-    weight: 2
+    weight: 4
   - keyword: "agent|agentic|agentic model|agentic models|agentic model vector graphics generation"
     weight: 2
   - keyword: "scientific diagram generation|technical illustration generation|chart and plot code generation|vectorized artwork generation"
