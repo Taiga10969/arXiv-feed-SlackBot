@@ -17,7 +17,7 @@ keywords:
   - keyword: "LaTeX|latex|LaTeX vector graphics"
     weight: 2
   - keyword: "SVG generation|Scalable Vector Graphics generation|SVG synthesis|scalable vector graphics generation"
-    weight: 2
+    weight: 4
   - keyword: "xml generation|xml"
     weight: 4
   - keyword: "agent|agentic|agentic model|agentic models|agentic model vector graphics generation"
