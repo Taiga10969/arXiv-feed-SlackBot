@@ -18,6 +18,8 @@ keywords:
     weight: 2
   - keyword: "SVG generation|Scalable Vector Graphics generation|SVG synthesis|scalable vector graphics generation"
     weight: 2
+  - keyword: "xml generation|xml"
+    weight: 2
   - keyword: "agent|agentic|agentic model|agentic models|agentic model vector graphics generation"
     weight: 2
   - keyword: "scientific diagram generation|technical illustration generation|chart and plot code generation|vectorized artwork generation"
