@@ -4,21 +4,23 @@
 # 重みが高いほど、そのキーワードにマッチした際のスコアが高くなります
 
 keywords:
-  - keyword: "vector graphics|vector|graphics"
+  - keyword: "vector graphics generation|vector graphic synthesis|vector-based image generation|generative vector graphics|procedural vector graphics"
     weight: 3
-  - keyword: "code|code generation"
+  - keyword: "code generation|vector graphics code generation|SVG code generation|TikZ code generation|LaTeX vector graphics generation"
     weight: 3
-  - keyword: "RAG|retrieval-augmented generation|retrieval-augmented generation|retrieval augmented generation"
-    weight: 2
-  - keyword: "LLM|large language model|large language models"
+  - keyword: "RAG|retrieval-augmented generation|retrieval augmented generation"
     weight: 1
-  - keyword: "TikZ"
+  - keyword: "LLM|large language model|large language models|LLM for vector graphics|large language model vector graphics generation"
+    weight: 1
+  - keyword: "TikZ generation|LaTeX TikZ code generation|TikZ"
     weight: 3
-  - keyword: "LaTeX|latex"
+  - keyword: "LaTeX|latex|LaTeX vector graphics"
     weight: 2
-  - keyword: "SVG|Scalable Vector Graphics|scalable vector graphics"
+  - keyword: "SVG generation|Scalable Vector Graphics generation|SVG synthesis|scalable vector graphics generation"
     weight: 2
-  - keyword: "agent|agentic|agentic model|agentic models"
+  - keyword: "agent|agentic|agentic model|agentic models|agentic model vector graphics generation"
+    weight: 2
+  - keyword: "scientific diagram generation|technical illustration generation|chart and plot code generation|vectorized artwork generation"
     weight: 2
 
 # 重みの設定例
