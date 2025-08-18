@@ -100,11 +100,28 @@ CONFIG, BASE_DIR, CFG_PATH, SEEN_PATH, SEEN, TZ, NOW_LOCAL = load_config_and_sta
 # ==============================
 ARXIV_ATOM = "http://export.arxiv.org/api/query"
 
-def fetch_arxiv(categories: List[str], max_results: int = 200) -> List[Dict[str, Any]]:
-    """指定されたカテゴリからarXiv論文を取得"""
+def fetch_arxiv(categories: List[str], max_results: int = 200, hours_back: int = None) -> List[Dict[str, Any]]:
+    """指定されたカテゴリからarXiv論文を取得（時間制限付き）"""
     cat_query = " OR ".join([f"cat:{c}" for c in categories])
+    
+    # 時間制限がある場合は、arXivのAPIで直接時間範囲を指定
+    if hours_back is not None:
+        # 現在時刻から指定時間前の日時を計算
+        now_utc = dt.datetime.now(dt.timezone.utc)
+        start_date = now_utc - dt.timedelta(hours=hours_back)
+        # arXivの日付形式（YYYYMMDDHHMMSS）に変換
+        start_date_str = start_date.strftime("%Y%m%d%H%M%S")
+        
+        # 時間範囲を検索クエリに追加
+        time_query = f"submittedDate:[{start_date_str}0000 TO 99991231235959]"
+        search_query = f"({cat_query}) AND {time_query}"
+        print(f"[DEBUG] arXiv search with time range: {start_date_str} to now")
+    else:
+        search_query = cat_query
+        print(f"[DEBUG] arXiv search without time range")
+    
     params = {
-        "search_query": cat_query,
+        "search_query": search_query,
         "start": 0,
         "max_results": max_results,
         "sortBy": "submittedDate",
@@ -263,6 +280,7 @@ def select_by_relevance(
     items: List[Dict[str, Any]],
     kw_patterns: List[Tuple[re.Pattern, int]],
     max_posts: int,
+    skip_time_check: bool = False,
 ) -> List[Tuple[Dict[str, Any], List[str], List[Tuple[str, int]], int]]:
     """関連性に基づいて論文を選択"""
     candidates: List[Tuple[int, dt.datetime, Dict[str, Any], List[str], List[Tuple[str, int]]]] = []
@@ -276,7 +294,9 @@ def select_by_relevance(
         if item["id"] in SEEN:
             print(f"[DEBUG] Item {item['id']} already seen, skipping")
             continue
-        if not within_search_hours(item["published"], hours_back):
+        
+        # arXivのAPIで既に時間制限をかけている場合はスキップ
+        if not skip_time_check and not within_search_hours(item["published"], hours_back):
             print(f"[DEBUG] Item {item['id']} outside search hours, skipping")
             continue
 
@@ -622,8 +642,7 @@ def main() -> None:
         print(f"[INFO] Current local time: {NOW_LOCAL.strftime('%Y-%m-%d %H:%M:%S %Z')}")
         print(f"[INFO] Search time range: past {hours_back} hours (from {NOW_LOCAL - dt.timedelta(hours=hours_back)} to {NOW_LOCAL})")
         print(f"[INFO] Fetching papers from arXiv categories: {categories}")
-        
-        items = fetch_arxiv(categories, max_results=200)
+        items = fetch_arxiv(categories, max_results=200, hours_back=hours_back)
 
         if not items:
             print("[ERROR] No papers fetched from arXiv")
@@ -631,7 +650,8 @@ def main() -> None:
 
         # ============== ここが主な変更点 ==============
         # まずフィルタを max_posts=全件 で適用して「フィルタ後の総数」を得る
-        filtered_all = select_by_relevance(items, kw_patterns, max_posts=len(items))
+        # arXivのAPIで既に時間制限をかけているので、時間チェックはスキップ
+        filtered_all = select_by_relevance(items, kw_patterns, max_posts=len(items), skip_time_check=True)
 
         if not filtered_all:
             print("[INFO] No new papers matched criteria")
