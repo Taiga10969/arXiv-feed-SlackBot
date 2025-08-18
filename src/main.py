@@ -100,28 +100,11 @@ CONFIG, BASE_DIR, CFG_PATH, SEEN_PATH, SEEN, TZ, NOW_LOCAL = load_config_and_sta
 # ==============================
 ARXIV_ATOM = "http://export.arxiv.org/api/query"
 
-def fetch_arxiv(categories: List[str], max_results: int = 200, hours_back: int = None) -> List[Dict[str, Any]]:
-    """指定されたカテゴリからarXiv論文を取得（時間制限付き）"""
+def fetch_arxiv(categories: List[str], max_results: int = 200) -> List[Dict[str, Any]]:
+    """指定されたカテゴリからarXiv論文を取得"""
     cat_query = " OR ".join([f"cat:{c}" for c in categories])
-    
-    # 時間制限がある場合は、arXivのAPIで直接時間範囲を指定
-    if hours_back is not None:
-        # 現在時刻から指定時間前の日時を計算
-        now_utc = dt.datetime.now(dt.timezone.utc)
-        start_date = now_utc - dt.timedelta(hours=hours_back)
-        # arXivの日付形式（YYYYMMDDHHMMSS）に変換
-        start_date_str = start_date.strftime("%Y%m%d%H%M%S")
-        
-        # 時間範囲を検索クエリに追加
-        time_query = f"submittedDate:[{start_date_str}0000 TO 99991231235959]"
-        search_query = f"({cat_query}) AND {time_query}"
-        print(f"[DEBUG] arXiv search with time range: {start_date_str} to now")
-    else:
-        search_query = cat_query
-        print(f"[DEBUG] arXiv search without time range")
-    
     params = {
-        "search_query": search_query,
+        "search_query": cat_query,
         "start": 0,
         "max_results": max_results,
         "sortBy": "submittedDate",
@@ -164,28 +147,12 @@ def fetch_arxiv(categories: List[str], max_results: int = 200, hours_back: int =
 # フィルタ & スコアリング
 # ==============================
 def within_search_hours(iso8601_str: str, hours_back: int) -> bool:
-    """指定時間以内に公開された論文かどうかを判定（設定されたタイムゾーン基準）"""
+    """指定時間以内に公開された論文かどうかを判定"""
     try:
-        # arXivの時刻をUTCとして解析
-        t_utc = dt.datetime.fromisoformat(iso8601_str.replace("Z", "+00:00"))
-        
-        # 設定されたタイムゾーンでの現在時刻を取得
-        now_local = dt.datetime.now(TZ)
-        
-        # 論文の時刻を設定されたタイムゾーンに変換
-        t_local = t_utc.astimezone(TZ)
-        
-        # 設定されたタイムゾーン基準で時間差を計算
-        time_diff = now_local - t_local
-        hours_diff = time_diff.total_seconds() / 3600
-        
-        # デバッグ情報を出力
-        print(f"[DEBUG] Time comparison: paper={t_local.strftime('%Y-%m-%d %H:%M:%S %Z')} ({t_utc.strftime('%Y-%m-%d %H:%M:%S')} UTC), now={now_local.strftime('%Y-%m-%d %H:%M:%S %Z')}, diff={hours_diff:.1f}h, limit={hours_back}h")
-        
-        return time_diff.total_seconds() <= hours_back * 3600
-        
-    except Exception as e:
-        print(f"[WARN] Error in within_search_hours: {e}")
+        t = dt.datetime.fromisoformat(iso8601_str.replace("Z", "+00:00"))
+        now_utc = dt.datetime.now(dt.timezone.utc)
+        return (now_utc - t).total_seconds() <= hours_back * 3600
+    except Exception:
         return False
 
 def parse_iso8601(s: str) -> dt.datetime:
@@ -280,7 +247,6 @@ def select_by_relevance(
     items: List[Dict[str, Any]],
     kw_patterns: List[Tuple[re.Pattern, int]],
     max_posts: int,
-    skip_time_check: bool = False,
 ) -> List[Tuple[Dict[str, Any], List[str], List[Tuple[str, int]], int]]:
     """関連性に基づいて論文を選択"""
     candidates: List[Tuple[int, dt.datetime, Dict[str, Any], List[str], List[Tuple[str, int]]]] = []
@@ -294,9 +260,7 @@ def select_by_relevance(
         if item["id"] in SEEN:
             print(f"[DEBUG] Item {item['id']} already seen, skipping")
             continue
-        
-        # arXivのAPIで既に時間制限をかけている場合はスキップ
-        if not skip_time_check and not within_search_hours(item["published"], hours_back):
+        if not within_search_hours(item["published"], hours_back):
             print(f"[DEBUG] Item {item['id']} outside search hours, skipping")
             continue
 
@@ -635,14 +599,9 @@ def main() -> None:
         categories = CONFIG.get("categories", ["cs.CV"])
         kw_patterns = compile_kw_patterns(CONFIG.get("keywords", []))
         max_posts = int(CONFIG.get("max_posts", 20))
-        hours_back = CONFIG.get("search", {}).get("hours_back", 24)
 
-        # タイムゾーン情報を表示
-        print(f"[INFO] Timezone: {TZ}")
-        print(f"[INFO] Current local time: {NOW_LOCAL.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-        print(f"[INFO] Search time range: past {hours_back} hours (from {NOW_LOCAL - dt.timedelta(hours=hours_back)} to {NOW_LOCAL})")
         print(f"[INFO] Fetching papers from arXiv categories: {categories}")
-        items = fetch_arxiv(categories, max_results=200, hours_back=hours_back)
+        items = fetch_arxiv(categories, max_results=200)
 
         if not items:
             print("[ERROR] No papers fetched from arXiv")
@@ -650,8 +609,7 @@ def main() -> None:
 
         # ============== ここが主な変更点 ==============
         # まずフィルタを max_posts=全件 で適用して「フィルタ後の総数」を得る
-        # arXivのAPIで既に時間制限をかけているので、時間チェックはスキップ
-        filtered_all = select_by_relevance(items, kw_patterns, max_posts=len(items), skip_time_check=True)
+        filtered_all = select_by_relevance(items, kw_patterns, max_posts=len(items))
 
         if not filtered_all:
             print("[INFO] No new papers matched criteria")
