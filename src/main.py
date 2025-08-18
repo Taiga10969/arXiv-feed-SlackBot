@@ -147,12 +147,28 @@ def fetch_arxiv(categories: List[str], max_results: int = 200) -> List[Dict[str,
 # フィルタ & スコアリング
 # ==============================
 def within_search_hours(iso8601_str: str, hours_back: int) -> bool:
-    """指定時間以内に公開された論文かどうかを判定"""
+    """指定時間以内に公開された論文かどうかを判定（設定されたタイムゾーン基準）"""
     try:
-        t = dt.datetime.fromisoformat(iso8601_str.replace("Z", "+00:00"))
-        now_utc = dt.datetime.now(dt.timezone.utc)
-        return (now_utc - t).total_seconds() <= hours_back * 3600
-    except Exception:
+        # arXivの時刻をUTCとして解析
+        t_utc = dt.datetime.fromisoformat(iso8601_str.replace("Z", "+00:00"))
+        
+        # 設定されたタイムゾーンでの現在時刻を取得
+        now_local = dt.datetime.now(TZ)
+        
+        # 論文の時刻を設定されたタイムゾーンに変換
+        t_local = t_utc.astimezone(TZ)
+        
+        # 設定されたタイムゾーン基準で時間差を計算
+        time_diff = now_local - t_local
+        hours_diff = time_diff.total_seconds() / 3600
+        
+        # デバッグ情報を出力
+        print(f"[DEBUG] Time comparison: paper={t_local.strftime('%Y-%m-%d %H:%M:%S %Z')} ({t_utc.strftime('%Y-%m-%d %H:%M:%S')} UTC), now={now_local.strftime('%Y-%m-%d %H:%M:%S %Z')}, diff={hours_diff:.1f}h, limit={hours_back}h")
+        
+        return time_diff.total_seconds() <= hours_back * 3600
+        
+    except Exception as e:
+        print(f"[WARN] Error in within_search_hours: {e}")
         return False
 
 def parse_iso8601(s: str) -> dt.datetime:
@@ -599,8 +615,14 @@ def main() -> None:
         categories = CONFIG.get("categories", ["cs.CV"])
         kw_patterns = compile_kw_patterns(CONFIG.get("keywords", []))
         max_posts = int(CONFIG.get("max_posts", 20))
+        hours_back = CONFIG.get("search", {}).get("hours_back", 24)
 
+        # タイムゾーン情報を表示
+        print(f"[INFO] Timezone: {TZ}")
+        print(f"[INFO] Current local time: {NOW_LOCAL.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        print(f"[INFO] Search time range: past {hours_back} hours (from {NOW_LOCAL - dt.timedelta(hours=hours_back)} to {NOW_LOCAL})")
         print(f"[INFO] Fetching papers from arXiv categories: {categories}")
+        
         items = fetch_arxiv(categories, max_results=200)
 
         if not items:
